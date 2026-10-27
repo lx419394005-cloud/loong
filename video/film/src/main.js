@@ -1,6 +1,6 @@
 // 小方块演绎视频的网页层：每一帧由 renderAt(t) 从时间直接算出。
 // 时间轴来自 ../timeline.json，按“段落 + 段内拍数”组织。四种模式（?mode=）：
-//   ui    全屏界面（微信、小红书、报告、混剪、完成）
+//   ui    全屏界面（聊天、内容社区、报告、混剪、完成）
 //   ov    透明叠加层（字幕、Agent 浮窗、亮灯时的图标连线、片尾文字）
 //   desk  笔记本屏幕内容（1600×1000），合成时按透视贴进 Blender 底片
 //   phone 手机屏幕内容（390×844 @2x）
@@ -47,8 +47,8 @@ const CAPS = [
   ['reveal', 1.0, G('小方块'), true],
   ['command', 0.6, '人在外面，发一句话'],
   ['unlock', 4.0, G('远程解锁'), true],
-  ['wechat', 0.6, `替你${G('回微信')}`],
-  ['xhs', 0.6, `替你刷${R('小红书')}做调研`],
+  ['wechat', 0.6, `替你${G('回消息')}`],
+  ['xhs', 0.6, `替你刷${R('爆款')}做调研`],
   ['report', 0.6, `报告写好，${G('发回手机')}`, false, 'notify'],
   ['montage', 0.0, `${C('Claude')}、${X('Codex')} 都能用`],
   ['done', 1.0, '干完，自动锁屏'],
@@ -73,11 +73,11 @@ const HUD = [
   ['command', 3.0, 'c', '收到'],
   ['unlock', 0.3, 'c', '输入密码'],
   ['unlock', 4.0, 'c', '解锁'],
-  ['wechat', 0.6, 'c', '回复微信'],
+  ['wechat', 0.6, 'c', '回复消息'],
   ['xhs', 0.6, 'x', '搜索「桌宠」'],
   ['xhs', 4.6, 'x', '读取评论'],
   ['report', 0.6, 'x', '整理报告'],
-  ['report', 2.3, 'c', '发送 → 文件传输助手'],
+  ['report', 2.3, 'c', '发送报告 → 我的手机'],
   ['montage', 0, 'c', '回复消息'],
   ['montage', 1, 'x', '读取笔记'],
   ['montage', 2, 'c', '填写表格'],
@@ -156,7 +156,7 @@ function updateOverlay(t) {
 const U = {};
 const LIST = [
   { n: '小王', pv: '周报呢？', bd: 1, av: 0 },
-  { n: '文件传输助手', pv: '[文件] 方案.pdf', av: 6 },
+  { n: '我的手机', pv: '[文件] 方案.pdf', av: 6 },
   { n: '家人群', pv: '[图片]', av: 3 },
   { n: '项目群', pv: '收到', av: 4 },
   { n: '订阅号', pv: '……', av: 7 },
@@ -176,7 +176,7 @@ function wxWindow(parent) {
   return { w, hd: w.querySelector('.hd'), items: [...w.querySelectorAll('.it')], badge: w.querySelector('.bd'), rowIn: rows[0], rowOut: rows[1], rowFile: rows[2], txt: w.querySelector('.inp .txt'), caret: w.querySelector('.inp .caret'), empty: w.querySelector('.empty') };
 }
 function xhsWindow(parent) {
-  const w = $('div', 'win xhs', parent, `<div class="bar" style="background:#fff"><i></i><i></i><i></i><div class="ttl" style="color:#333">小红书</div></div>
+  const w = $('div', 'win xhs', parent, `<div class="bar" style="background:#fff"><i></i><i></i><i></i><div class="ttl" style="color:#333">发现</div></div>
     <div class="top"><div class="sb">${SVG.search}<span class="txt"></span><span class="caret" style="color:var(--red)"></span></div><div class="go">搜索</div></div>
     <div class="tabs"><span>全部</span><span class="on">最热</span><span>最新</span><span>图文</span><span>视频</span></div>
     <div class="feedwrap"><div class="feed"><div class="col"></div><div class="col"></div></div></div>`);
@@ -199,7 +199,7 @@ function xhsWindow(parent) {
 }
 {
   U.wall = $('div', 'wall', ui);
-  U.menubar = $('div', 'menubar', ui, '<span>访达</span><span style="font-weight:500">文件</span><span style="font-weight:500">编辑</span><span style="font-weight:500">显示</span><span class="r">21:48</span>');
+  U.menubar = $('div', 'menubar', ui, '<span>桌面</span><span style="font-weight:500">文件</span><span style="font-weight:500">编辑</span><span style="font-weight:500">显示</span><span class="r">21:48</span>');
   U.dock = $('div', 'dock', ui, DOCK(['wx', 'xhs', 'globe', 'folder', 'grid', 'term']));
   U.wx = wxWindow(ui);
   U.xhs = xhsWindow(ui);
@@ -216,8 +216,8 @@ function xhsWindow(parent) {
   const sn0 = $('div', 'win wx', ui, `<div class="main" style="flex:1"><div class="hd" style="margin-top:62px">项目群</div><div class="msgs">
      <div class="row in"><div class="av" style="background:${avBg(4)}"></div><div class="bb">明早的会改到 10 点</div></div>
      <div class="row out"><div class="av" style="background:${MY_AV}"></div><div class="bb">收到，已更新日程</div></div></div></div>`);
-  sn0.insertAdjacentHTML('afterbegin', '<div class="bar" style="position:absolute;left:0;right:0;top:0;z-index:2"><i></i><i></i><i></i><div class="ttl" style="color:#333">微信</div></div>');
-  const sn1 = $('div', 'win xhs', ui, `<div class="bar" style="background:#fff"><i></i><i></i><i></i><div class="ttl" style="color:#333">小红书</div></div>
+  sn0.insertAdjacentHTML('afterbegin', '<div class="bar" style="position:absolute;left:0;right:0;top:0;z-index:2"><i></i><i></i><i></i><div class="ttl" style="color:#333">消息</div></div>');
+  const sn1 = $('div', 'win xhs', ui, `<div class="bar" style="background:#fff"><i></i><i></i><i></i><div class="ttl" style="color:#333">发现</div></div>
      <div class="note">${petArt(2, 900, 600)}<div class="nt">会眨眼的电子宠物，治愈了</div><div class="st"><span>${SVG.heart} 1.8万</span><span>${SVG.star} 6230</span><span>${SVG.bubble} 984</span></div></div>
      <div class="scan" style="left:20px;top:730px;width:860px;height:150px"><div class="tg">Codex 读取中</div></div>`);
   const cells = [];
@@ -242,8 +242,8 @@ function xhsWindow(parent) {
   U.snips = [sn0, sn1, sn2, sn3, sn4, sn5];
   U.snips.forEach((e, i) => { if (i !== 3) css(e, { left: '90px', top: '300px', width: '900px', height: '1000px' }); });
 
-  U.toast = $('div', 'toast', ui, '<div class="ck">✓</div><div class="tt">全部完成</div><div class="ts">微信已回复 · 调研报告已发回</div>');
-  U.lock = $('div', 'lock', ui, `<div class="dt">10月27日 星期二</div><div class="tm">21:53</div><div class="av"></div><div class="nm">我的 MacBook</div>
+  U.toast = $('div', 'toast', ui, '<div class="ck">✓</div><div class="tt">全部完成</div><div class="ts">消息已回复 · 调研报告已发回</div>');
+  U.lock = $('div', 'lock', ui, `<div class="dt">10月27日 星期二</div><div class="tm">21:53</div><div class="av"></div><div class="nm">我的电脑</div>
     <div class="pw"><div class="go">→</div></div><div class="hint">输入密码</div>`);
   U.cursor = $('div', 'cursor', ui, SVG.cursor);
   U.ripple = $('div', 'ripple', ui);
@@ -305,9 +305,9 @@ function updateUI(t) {
       css(Xw.scan, { left: `${cur[1]}px`, top: `${cur[2]}px`, width: `${cur[3]}px`, height: `${cur[4]}px`, transform: `scale(${1 + a * 0.04})` });
     }
   } else if (sec === 'report') {
-    // 快：报告成形 → 缩成文件 → 发到文件传输助手
+    // 快：报告成形 → 缩成文件 → 发到“我的手机”
     show(W.w, lb >= 2.3);
-    W.hd.textContent = '文件传输助手';
+    W.hd.textContent = '我的手机';
     show(W.empty, false);
     W.items.forEach((it, i) => it.classList.toggle('sel', i === 1));
     show(W.badge, false);
@@ -372,7 +372,7 @@ function updateUI(t) {
 const D = {};
 {
   D.wall = $('div', 'wall', deskEl);
-  D.menubar = $('div', 'menubar', deskEl, '<span>访达</span><span style="font-weight:500">文件</span><span style="font-weight:500">编辑</span><span style="font-weight:500">显示</span><span class="r">21:47</span>');
+  D.menubar = $('div', 'menubar', deskEl, '<span>桌面</span><span style="font-weight:500">文件</span><span style="font-weight:500">编辑</span><span style="font-weight:500">显示</span><span class="r">21:47</span>');
   D.claude = $('div', 'win claude', deskEl, `<div class="bar"><i></i><i></i><i></i><div class="ttl"><span class="dot c"></span>Claude</div></div>
     <div class="body"><div class="msg">好的，我来重构这个模块，并补上测试：</div><div class="code"></div></div>`);
   D.codex = $('div', 'win codex', deskEl, `<div class="bar"><i></i><i></i><i></i><div class="ttl" style="color:#9fb3c6"><span class="dot x"></span>Codex</div></div><div class="body"></div>`);
@@ -384,7 +384,7 @@ const D = {};
   D.dockIcons = [...D.dock.children];
   D.cursor = $('div', 'cursor', deskEl, SVG.cursor);
   D.ripple = $('div', 'ripple', deskEl);
-  D.lock = $('div', 'dlock', deskEl, `<div class="dt">10月27日 星期二</div><div class="tm">21:47</div><div class="av"></div><div class="nm">我的 MacBook</div>
+  D.lock = $('div', 'dlock', deskEl, `<div class="dt">10月27日 星期二</div><div class="tm">21:47</div><div class="av"></div><div class="nm">我的电脑</div>
     <div class="pw"><span class="pd"></span><span class="pd"></span><span class="pd"></span><span class="pd"></span><div class="go">→</div></div><div class="hint">输入密码</div>`);
   D.pw = D.lock.querySelector('.pw');
   D.pds = [...D.lock.querySelectorAll('.pd')];
@@ -504,13 +504,13 @@ const P = {};
   P.chat = $('div', 'pscr ph-chat', phoneEl, `<div class="island"></div>
     <div class="ph-status"><span>21:47</span><span>5G</span></div>
     <div class="ph-head"><span class="dot c"></span>Claude</div>
-    <div class="ph-msgs"><div class="bub me" style="opacity:0">回下微信，再让 Codex 去小红书调研下桌宠</div></div>
+    <div class="ph-msgs"><div class="bub me" style="opacity:0">回下小王的消息，再让 Codex 调研下桌宠爆款</div></div>
     <div class="ph-input"><span class="txt"></span><span class="caret" style="color:var(--claude)"></span><span class="send">↑</span></div>`);
   P.bub = P.chat.querySelector('.bub');
   P.txt = P.chat.querySelector('.txt');
   P.caret = P.chat.querySelector('.ph-input .caret');
   P.lock = $('div', 'pscr ph-lock', phoneEl, `<div class="island"></div><div class="tm">21:52</div><div class="dt">10月27日 星期二</div>
-    <div class="notif"><div class="app"><b></b>微信 · 现在</div><div class="t1">文件传输助手</div><div class="t2">[文件] 桌宠调研.xlsx</div></div>`);
+    <div class="notif"><div class="app"><b></b>消息 · 现在</div><div class="t1">我的电脑</div><div class="t2">[文件] 桌宠调研.xlsx</div></div>`);
   P.notif = P.lock.querySelector('.notif');
 }
 function updatePhone(t) {
@@ -518,7 +518,7 @@ function updatePhone(t) {
   const lb = lbOf(sec, t);
   show(P.chat, sec === 'command'); show(P.lock, sec !== 'command');
   if (sec === 'command') {
-    const MSG = [...'回下微信，再让 Codex 去小红书调研下桌宠'];
+    const MSG = [...'回下小王的消息，再让 Codex 调研下桌宠爆款'];
     const n = Math.floor(MSG.length * inv(0.6, 1.7, lb));
     const sent = lb >= 2.0;
     P.txt.textContent = sent ? '' : MSG.slice(0, n).join('');

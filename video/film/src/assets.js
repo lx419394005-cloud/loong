@@ -38,8 +38,8 @@ const SVG = {
   search: '<svg viewBox="0 0 24 24" width="32" height="32"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="#999" stroke-width="2.4"/><path d="M15.5 15.5 L21 21" stroke="#999" stroke-width="2.4" stroke-linecap="round"/></svg>',
 };
 const ICONS = {
-  wx: { bg: 'linear-gradient(160deg,#2be37f,#07a650)', g: SVG.chat, n: '微信' },
-  xhs: { bg: 'linear-gradient(160deg,#ff5a6e,#e3112f)', g: SVG.note, n: '小红书' },
+  wx: { bg: 'linear-gradient(160deg,#2be37f,#07a650)', g: SVG.chat, n: '聊天' },
+  xhs: { bg: 'linear-gradient(160deg,#ff5a6e,#e3112f)', g: SVG.note, n: '社区' },
   lock: { bg: 'linear-gradient(160deg,#55636e,#2b343c)', g: SVG.lock, n: '锁屏' },
   folder: { bg: 'linear-gradient(160deg,#4fb2ff,#1b6fe0)', g: SVG.folder, n: '文件' },
   globe: { bg: 'linear-gradient(160deg,#6a8cff,#3346d6)', g: SVG.globe, n: '浏览器' },

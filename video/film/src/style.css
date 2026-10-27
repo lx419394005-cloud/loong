@@ -133,7 +133,7 @@ body { font-family: var(--sans); color: #fff; -webkit-font-smoothing: antialiase
 .lock .pw .go { position: absolute; right: 12px; top: 12px; width: 54px; height: 54px; border-radius: 50%; background: rgba(255,255,255,0.3); color: #fff; font-size: 30px; line-height: 54px; font-weight: 900; }
 .lock .hint { position: absolute; top: 1370px; left: 0; right: 0; font-size: 28px; opacity: 0.75; }
 
-/* ---------- 微信风格 ---------- */
+/* ---------- 聊天窗口 ---------- */
 .wx { background: #f5f5f5; color: #111; display: flex; }
 .wx .side { width: 84px; background: #2e2e2e; padding-top: 80px; display: flex; flex-direction: column; align-items: center; gap: 34px; }
 .wx .side b { width: 46px; height: 46px; border-radius: 10px; background: #5a5a5a; display: block; }
@@ -165,7 +165,7 @@ body { font-family: var(--sans); color: #fff; -webkit-font-smoothing: antialiase
 .wx .empty { position: absolute; inset: 132px 0 0 0; background: #f5f5f5; display: flex; align-items: center; justify-content: center; }
 .wx .empty b { width: 150px; height: 120px; border-radius: 60px; background: #e2e2e2; display: block; }
 
-/* ---------- 小红书风格 ---------- */
+/* ---------- 内容社区窗口 ---------- */
 .xhs { background: #fff; color: #222; }
 .xhs .top { position: absolute; left: 0; right: 0; top: 62px; height: 110px; display: flex; align-items: center; gap: 20px; padding: 0 28px; background: #fff; z-index: 3; }
 .xhs .sb { flex: 1; height: 72px; border-radius: 36px; background: #f2f2f2; display: flex; align-items: center; padding: 0 26px; gap: 14px; font-size: 30px; }
