@@ -271,3 +271,41 @@ body { font-family: var(--sans); color: #fff; -webkit-font-smoothing: antialiase
 #flash { position: absolute; inset: 0; z-index: 40; pointer-events: none; opacity: 0; }
 #vig { position: absolute; inset: 0; z-index: 41; pointer-events: none; background: radial-gradient(ellipse 80% 70% at 50% 48%, transparent 55%, rgba(0,0,0,0.55) 100%); }
 #grain { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 42; pointer-events: none; opacity: 0.07; mix-blend-mode: overlay; }
+
+/* ---------- 分层渲染模式 ---------- */
+#desk, #phonescr { display: none; left: 0; top: 0; overflow: hidden; }
+body[data-mode="desk"], body[data-mode="phone"] { width: auto; height: auto; }
+body[data-mode="desk"] #stage, body[data-mode="phone"] #stage { display: none; }
+body[data-mode="desk"] #desk { display: block; width: 1600px; height: 1000px; background: #000; }
+body[data-mode="phone"] #phonescr { display: block; width: 390px; height: 844px; background: #000; }
+body[data-mode="ov"], body[data-mode="ov"] #stage { background: transparent; }
+body[data-mode="ov"] #vig, body[data-mode="ov"] #grain, body[data-mode="ov"] #flash { display: none; }
+body[data-mode="ui"] #hud, body[data-mode="ui"] #cap, body[data-mode="ui"] #capbg,
+body[data-mode="ui"] #vig, body[data-mode="ui"] #grain, body[data-mode="ui"] #flash { display: none; }
+
+#desk .menubar { height: 34px; font-size: 17px; gap: 22px; padding: 0 22px; }
+#desk .dock { bottom: 14px; gap: 12px; padding: 10px 14px; border-radius: 24px; }
+#desk .dock .d { width: 64px; height: 64px; border-radius: 15px; }
+#desk .win .bar { height: 46px; }
+#desk .win .bar .ttl { font-size: 20px; }
+#desk .claude .body { padding: 20px 26px; }
+#desk .claude .msg { font-size: 22px; }
+#desk .code { font-size: 19px; min-height: 0; padding: 18px 20px; }
+#desk .codex .body { font-size: 20px; padding: 20px 26px; }
+#desk .cursor { transform: scale(0.75); transform-origin: 0 0; }
+.dlock { position: absolute; inset: 0; text-align: center; color: #fff; }
+.dlock .dt { position: absolute; top: 130px; left: 0; right: 0; font-size: 34px; font-weight: 500; opacity: 0.9; }
+.dlock .tm { position: absolute; top: 165px; left: 0; right: 0; font-size: 190px; font-weight: 300; letter-spacing: -4px; line-height: 1.1; }
+.dlock .av { position: absolute; top: 590px; left: 50%; width: 110px; height: 110px; margin-left: -55px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #7af5d0, #1d7f72 60%, #0d3a40); }
+.dlock .nm { position: absolute; top: 718px; left: 0; right: 0; font-size: 30px; font-weight: 700; }
+.dlock .pw { position: absolute; top: 775px; left: 50%; width: 360px; height: 62px; margin-left: -180px; border-radius: 31px; background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.3); display: flex; align-items: center; padding: 0 24px; gap: 16px; }
+.dlock .pw .pd { width: 18px; height: 18px; border-radius: 50%; background: #fff; }
+.dlock .pw .go { position: absolute; right: 9px; top: 9px; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.3); font-size: 24px; line-height: 44px; font-weight: 900; }
+.dlock .hint { position: absolute; top: 860px; left: 0; right: 0; font-size: 22px; opacity: 0.75; }
+.pscr { position: absolute; inset: 0; overflow: hidden; }
+.pscr .island { position: absolute; top: 12px; left: 50%; width: 112px; height: 32px; margin-left: -56px; border-radius: 18px; background: #000; z-index: 5; }
+.pscr.ph-lock .tm { margin-top: 110px; font-size: 104px; }
+.pscr.ph-lock .notif { top: 380px; left: 14px; right: 14px; }
+.pscr .ph-msgs { top: 150px; bottom: 140px; }
+.pscr .bub { font-size: 24px; max-width: 280px; }
+.pscr .ph-input { font-size: 22px; }

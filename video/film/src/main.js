@@ -275,9 +275,9 @@ scene([bs(3), bs(4)], (u, o, s) => {
   s.svg = $('div', 'abs', o, '');
   css(s.svg, { inset: '0' });
   s.icons = ['wx', 'xhs', 'lock', 'folder', 'globe', 'grid'].map((k) => icon(o, k));
-  s.iconPos = [[100, 330], [830, 330], [60, 1060], [870, 1060], [465, 230], [465, 1190]];
+  s.iconPos = [[100, 420], [830, 420], [60, 1130], [870, 1130], [465, 280], [465, 1250]];
   s.svg.innerHTML = `<svg width="1080" height="1920" style="position:absolute;left:0;top:0">${s.iconPos.map(([x, y], i) =>
-    `<line id="ln${i}" x1="540" y1="880" x2="${x + 75}" y2="${y + 75}" stroke="#3dff8f" stroke-width="4" stroke-linecap="round" opacity=".85" style="filter:drop-shadow(0 0 8px #3dff8f)"/>`).join('')}</svg>`;
+    `<line id="ln${i}" x1="540" y1="960" x2="${x + 75}" y2="${y + 75}" stroke="#3dff8f" stroke-width="4" stroke-linecap="round" opacity=".85" style="filter:drop-shadow(0 0 8px #3dff8f)"/>`).join('')}</svg>`;
   s.lines = s.iconPos.map((_, i) => s.svg.querySelector(`#ln${i}`));
 }, (s, t) => {
   const lt = t - bs(3);
@@ -304,7 +304,7 @@ scene([bs(3), bs(4)], (u, o, s) => {
     const lp = eOut(inv(t0 - 0.05, t0 + 0.15, lt));
     const [x2, y2] = [x + 75, y + 75 + drift];
     ln.setAttribute('x2', lerp(540, x2, lp));
-    ln.setAttribute('y2', lerp(880, y2, lp));
+    ln.setAttribute('y2', lerp(960, y2, lp));
     ln.setAttribute('opacity', lp * 0.75);
   });
   return { mode: 'full', shot, flash: on ? ['rgba(160,255,200,1)', 0.75 * pulse(lt - ig, 7)] : null };
@@ -775,47 +775,207 @@ function drawGrain(frame) {
   gctx.putImageData(gimg, 0, 0);
 }
 
+// ---------- 设备屏幕（贴到 Blender 底片里的笔记本 / 手机屏幕上） ----------
+const MODE = new URLSearchParams(location.search).get('mode') || 'full';
+const deskEl = $('div', 'abs', document.body);
+deskEl.id = 'desk';
+const phoneEl = $('div', 'abs', document.body);
+phoneEl.id = 'phonescr';
+
+const DESK = {};
+(() => {
+  const d = deskEl;
+  DESK.wall = $('div', 'wall', d);
+  DESK.menubar = $('div', 'menubar', d, '<span>访达</span><span style="font-weight:500">文件</span><span style="font-weight:500">编辑</span><span style="font-weight:500">显示</span><span class="r">21:47</span>');
+  DESK.claude = $('div', 'win claude', d, `<div class="bar"><i></i><i></i><i></i><div class="ttl"><span class="dot c"></span>Claude</div></div>
+    <div class="body"><div class="msg">好的，我来重构这个模块，并补上测试：</div><div class="code"></div></div>`);
+  DESK.codex = $('div', 'win codex', d, `<div class="bar"><i></i><i></i><i></i><div class="ttl" style="color:#9fb3c6"><span class="dot x"></span>Codex</div></div><div class="body"></div>`);
+  css(DESK.claude, { left: '90px', top: '120px', width: '690px', height: '640px' });
+  css(DESK.codex, { left: '820px', top: '120px', width: '690px', height: '640px' });
+  DESK.code = DESK.claude.querySelector('.code');
+  DESK.cbody = DESK.codex.querySelector('.body');
+  DESK.dock = $('div', 'dock', d, ['wx', 'xhs', 'globe', 'folder', 'grid', 'term'].map((k) => `<div class="d" style="background:${ICONS[k].bg}"><div style="transform:scale(.62)">${ICONS[k].g}</div></div>`).join(''));
+  DESK.dockIcons = [...DESK.dock.children];
+  DESK.cursor = $('div', 'cursor', d, SVG.cursor);
+  DESK.ripple = $('div', 'ripple', d);
+  DESK.lock = $('div', 'dlock', d, `<div class="dt">10月27日 星期二</div><div class="tm">21:47</div><div class="av"></div><div class="nm">我的 MacBook</div>
+    <div class="pw"><span class="pd"></span><span class="pd"></span><span class="pd"></span><span class="pd"></span><div class="go">→</div></div><div class="hint">输入密码</div>`);
+  DESK.pds = [...DESK.lock.querySelectorAll('.pd')];
+  DESK.tm = DESK.lock.querySelector('.tm');
+  DESK.black = $('div', 'abs', d);
+  css(DESK.black, { inset: '0', background: '#000' });
+})();
+const CODE_SRC = [
+  'export async function sendKeys(keys) {',
+  '  const dev = await hid.open(VID, PID);',
+  '  for (const k of keys) {',
+  '    await dev.write(encode(k));',
+  '  }',
+  '  return dev.close();',
+  '}',
+].join('\n');
+const CODEX_LINES = [
+  '<span class="p">›</span> 重构 hid_bridge，并补全测试',
+  '<span class="d">• 读取 src/bridge.ts</span>',
+  '<span class="d">• 修改 3 个文件</span>',
+  '<span class="g">+ export function sendKeys(keys)</span>',
+  '<span class="r">- function legacyWrite()</span>',
+  '<span class="g">+ test("按顺序写入按键")</span>',
+  '<span class="g">✓ 42 项测试通过</span>',
+];
+const hlCode = (src) => esc(src)
+  .replace(/\b(export|async|function|const|for|of|await|return)\b/g, '<span class="k">$1</span>')
+  .replace(/\b(sendKeys|open|write|encode|close)\b/g, '<span class="f">$1</span>')
+  .replace(/\b(VID|PID)\b/g, '<span class="n">$1</span>');
+
+function updateDesk(t) {
+  const D = DESK;
+  const bar = Math.floor(t / BAR) + 1;
+  const lb = (t - bs(bar)) / B;
+  [D.claude, D.codex, D.cursor, D.ripple, D.lock, D.black].forEach((e) => show(e, false));
+  css(D.wall, { filter: '', transform: '' });
+  show(D.menubar, true); show(D.dock, true);
+  D.dockIcons.forEach((e) => css(e, { filter: '', transform: '' }));
+  const lockState = (dots, time, dim) => {
+    show(D.lock, true);
+    D.tm.textContent = time;
+    D.pds.forEach((p, i) => css(p, { opacity: i < dots ? 1 : 0 }));
+    css(D.wall, { filter: `blur(24px) brightness(${0.75 * dim})`, transform: 'scale(1.1)' });
+    css(D.lock, { opacity: dim, transform: '' });
+    show(D.menubar, false); show(D.dock, false);
+  };
+  if (t < bs(3)) {
+    show(D.claude, true); show(D.codex, true);
+    const n = Math.floor(CODE_SRC.length * eIO(inv(0.1, 1.75, t)));
+    D.code.innerHTML = hlCode(CODE_SRC.slice(0, n)) + (t < 1.85 ? '<span class="caret" style="color:#e7956e"></span>' : '');
+    const shown = Math.min(CODEX_LINES.length, Math.floor(inv(0.15, 1.7, t) * CODEX_LINES.length) + (t > 0.15 ? 1 : 0));
+    D.cbody.innerHTML = CODEX_LINES.slice(0, shown).map((l) => `<div class="ln">${l}</div>`).join('');
+    const wall = inv(bs(2) + 0.3, bs(2) + 0.8, t);
+    const bump = t > bs(2) + 3 * B ? pulse(t - (bs(2) + 3.0 * B), 8) : 0;
+    D.claude.style.boxShadow = `0 40px 100px rgba(0,0,0,.6), 0 0 0 ${2 + bump * 5}px rgba(120,255,200,${0.1 + wall * 0.35 + bump * 0.6})`;
+    D.codex.style.boxShadow = `0 40px 100px rgba(0,0,0,.6), 0 0 0 2px rgba(120,255,200,${0.1 + wall * 0.35})`;
+    D.dockIcons.slice(0, 4).forEach((e, i) => {
+      const dimT = bs(2) + (1 + i * 0.5) * B;
+      const dim = eOut(inv(dimT, dimT + 0.12, t));
+      css(e, { filter: `grayscale(${dim}) brightness(${lerp(1, 0.4, dim)})`, transform: `scale(${lerp(1, 0.88, dim)})` });
+    });
+    const c0 = bs(2) + 2.0 * B, hit = bs(2) + 3.0 * B;
+    if (t > c0) {
+      let cx = lerp(560, 752, eIn(inv(c0, hit, t)));
+      if (t > hit) cx = lerp(752, 640, eOut(inv(hit, hit + 0.35, t)));
+      show(D.cursor, true);
+      css(D.cursor, { left: `${cx}px`, top: '470px' });
+      const rp = inv(hit, hit + 0.35, t);
+      if (t > hit && rp < 1) { show(D.ripple, true); css(D.ripple, { left: '780px', top: '500px', transform: `scale(${0.3 + rp * 1.4})`, opacity: 1 - rp }); }
+    }
+    const dark = inv(bs(3) - 0.5 * B, bs(3), t);
+    deskEl.style.filter = `brightness(${1 - dark * 0.75})`;
+    return;
+  }
+  deskEl.style.filter = '';
+  if (bar === 4) { lockState(0, '21:47', 0.55); return; }
+  if (bar === 5) {
+    const DOTS = [0.5, 1.5, 2.0, 2.5];
+    const dots = DOTS.filter((x) => lb >= x).length;
+    const unlock = eIO(inv(3.0, 3.5, lb));
+    lockState(dots, '21:47', 1);
+    D.pds.forEach((p, i) => { const a = inv(DOTS[i], DOTS[i] + 0.08, lb); css(p, { opacity: a, transform: `scale(${eBack(a) * (1 + 0.5 * pulse((lb - DOTS[i]) * B, 12))})` }); });
+    css(D.lock, { opacity: 1 - unlock, transform: `translateY(${-unlock * 100}px)` });
+    css(D.wall, { filter: `blur(${(1 - unlock) * 24}px) brightness(${lerp(0.75, 1, unlock)})`, transform: `scale(${lerp(1.1, 1, unlock)})` });
+    show(D.menubar, unlock > 0); show(D.dock, unlock > 0);
+    css(D.menubar, { opacity: unlock }); css(D.dock, { opacity: unlock });
+    return;
+  }
+  // 第 11 小节：锁屏后熄屏
+  lockState(0, '21:53', 1);
+  show(D.black, true);
+  css(D.black, { opacity: eIn(inv(1.4, 2.0, lb)) });
+}
+
+const PH = {};
+(() => {
+  const p = phoneEl;
+  PH.chat = $('div', 'pscr ph-chat', p, `<div class="island"></div>
+    <div class="ph-status"><span>21:47</span><span>5G</span></div>
+    <div class="ph-head"><span class="dot c"></span>Claude</div>
+    <div class="ph-msgs"><div class="bub me" style="opacity:0">回下微信，再让 Codex 去小红书调研下桌宠</div></div>
+    <div class="ph-input"><span class="txt"></span><span class="caret" style="color:var(--claude)"></span><span class="send">↑</span></div>`);
+  PH.bub = PH.chat.querySelector('.bub');
+  PH.txt = PH.chat.querySelector('.txt');
+  PH.caret = PH.chat.querySelector('.ph-input .caret');
+  PH.lock = $('div', 'pscr ph-lock', p, `<div class="island"></div><div class="tm">21:52</div><div class="dt">10月27日 星期二</div>
+    <div class="notif"><div class="app"><b></b>微信 · 现在</div><div class="t1">文件传输助手</div><div class="t2">[文件] 桌宠调研.xlsx</div></div>`);
+  PH.notif = PH.lock.querySelector('.notif');
+})();
+function updatePhone(t) {
+  const bar = Math.floor(t / BAR) + 1;
+  const lb = (t - bs(bar)) / B;
+  show(PH.chat, bar <= 4); show(PH.lock, bar > 4);
+  if (bar <= 4) {
+    const MSG = [...'回下微信，再让 Codex 去小红书调研下桌宠'];
+    const n = Math.floor(MSG.length * inv(0.55, 1.8, lb));
+    const sent = lb >= 2.0;
+    PH.txt.textContent = sent ? '' : MSG.slice(0, n).join('');
+    PH.caret.style.opacity = sent ? 0 : 1;
+    const ba = inv(2.0, 2.25, lb);
+    css(PH.bub, { opacity: ba, transform: `translateY(${(1 - eOut(ba)) * 80}px) scale(${lerp(0.8, 1, eBack(ba))})` });
+  } else {
+    const na = inv(3.0, 3.18, lb);
+    css(PH.notif, { opacity: na, transform: `translateY(${(1 - eOut(na)) * -60}px) scale(${lerp(0.9, 1, eBack(na))})` });
+  }
+}
+
 // ---------- 入口 ----------
 const stage = createStage(glCanvas, W, H);
 window.DUR = DUR;
 window.FPS = 30;
+window.MODE = MODE;
+const OVERLAY_SCENES = new Set([scenes[1], scenes[scenes.length - 1]]); // 第 3 小节的图标连线、片尾文字
+document.body.dataset.mode = MODE;
+if (MODE === 'ov') document.documentElement.style.background = 'transparent';
 window.renderAt = async (t, frame = 0) => {
+  if (MODE === 'desk') { updateDesk(t); await document.fonts.ready; return; }
+  if (MODE === 'phone') { updatePhone(t); await document.fonts.ready; return; }
   let gl = null;
   let flash = null;
   for (const s of scenes) {
-    const on = t >= s.range[0] && t < s.range[1];
+    let on = t >= s.range[0] && t < s.range[1];
+    if (MODE === 'ov') {
+      show(s.u, false);
+      show(s.o, on && OVERLAY_SCENES.has(s));
+      if (on && OVERLAY_SCENES.has(s)) s.update(s, t);
+      continue;
+    }
     show(s.u, on); show(s.o, on);
     if (on) {
       const r = s.update(s, t);
       if (r) { if (r.mode) gl = r; if (r.flash) flash = r.flash; }
     }
   }
-  const ins = insertAt(t);
+  const ins = MODE === 'full' ? insertAt(t) : null;
   if (ins) {
     gl = { mode: 'full', shot: insertShot(ins) };
     for (const s of scenes) { show(s.u, false); show(s.o, false); }
     flash = ['#fff', 0.35 * pulse(ins.lt, 30)];
   }
-  if (gl) {
+  if (gl && MODE === 'full') {
     stage.render(gl.shot, t);
     glCanvas.style.display = '';
     glCanvas.style.mixBlendMode = gl.mode === 'screen' ? 'screen' : 'normal';
     const [dx, dy] = gl.offset || [0, 0];
     glCanvas.style.transform = `translate(${dx}px, ${dy}px)`;
-    glCanvas.style.zIndex = gl.mode === 'screen' ? '' : '';
   } else glCanvas.style.display = 'none';
-  if (flash && flash[1] > 0.001) css(flashEl, { background: flash[0], opacity: flash[1] });
+  if (MODE === 'full' && flash && flash[1] > 0.001) css(flashEl, { background: flash[0], opacity: flash[1] });
   else flashEl.style.opacity = 0;
-  updateHud(t);
-  updateCaption(t);
-  drawGrain(frame);
+  if (MODE !== 'ui') { updateHud(t); updateCaption(t); }
+  if (MODE === 'full') drawGrain(frame);
   await document.fonts.ready;
 };
 
 // 预加载所有字形，避免逐帧渲染时字体还没下载
 (async () => {
   for (const s of scenes) { show(s.u, true); show(s.o, true); s.u.style.opacity = 0; s.o.style.opacity = 0; }
-  const all = document.body.innerText + Object.values(CAPS).map((c) => c.l1 + c.l2).join('') + HUD.map((h) => h[2]).join('') + 'ClaudeCodex▸✓→';
+  const all = document.body.innerText + Object.values(CAPS).map((c) => c.l1 + c.l2).join('') + HUD.map((h) => h[2]).join('') + 'ClaudeCodex▸✓→' + CODE_SRC;
   const txt = all.replace(/<[^>]+>/g, '');
   await Promise.all([300, 400, 500, 700, 900].map((w) => document.fonts.load(`${w} 40px "Noto Sans SC"`, txt)));
   await Promise.all([400, 700].map((w) => document.fonts.load(`${w} 30px "JetBrains Mono"`, txt)));
