@@ -1,0 +1,13 @@
+{
+  "name": "xiaofangkuai-film",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs"
+  },
+  "dependencies": {
+    "@fontsource/jetbrains-mono": "5.1.0",
+    "@fontsource/noto-sans-sc": "5.1.0",
+    "three": "0.169.0"
+  }
+}
