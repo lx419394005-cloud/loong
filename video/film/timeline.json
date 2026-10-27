@@ -1,0 +1,32 @@
+{
+  "bpm": 128,
+  "fps": 30,
+  "tail": 1.0,
+  "sections": [
+    ["intro1", 4, "Claude 和 Codex 在窗口里写代码"],
+    ["intro2", 4, "它们走不出对话框"],
+    ["reveal", 4, "小方块亮灯"],
+    ["command", 4, "人在外面，手机上发一句话"],
+    ["unlock", 8, "重点：远程解锁 Mac"],
+    ["wechat", 8, "Claude 回微信"],
+    ["xhs", 8, "Codex 刷小红书做调研"],
+    ["report", 4, "快：报告写好，发到文件传输助手"],
+    ["notify", 2, "快：手机收到报告"],
+    ["montage", 6, "快：Claude / Codex 轮流操作各种软件"],
+    ["done", 4, "完成 → 自动锁屏 → 黑暗里的小方块"],
+    ["end", 4, "片尾"]
+  ],
+  "inserts": [
+    ["command", 0, "green"],
+    ["wechat", 0, "blue"],
+    ["xhs", 0, "blue"],
+    ["report", 0, "blue"],
+    ["montage", 0.5, "blue"],
+    ["montage", 1.5, "blue"],
+    ["montage", 2.5, "blue"],
+    ["montage", 3.5, "blue"],
+    ["montage", 4.5, "blue"],
+    ["montage", 5.5, "blue"]
+  ],
+  "insert_beats": 0.5
+}

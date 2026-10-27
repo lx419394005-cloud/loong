@@ -3,6 +3,7 @@
 python3 blender/shots.py reveal|inserts|dark|end [--samples N] [--pct P] [--only 113,114]
 时间轴和 src/main.js、music.py 一致：128 BPM，30 fps。
 """
+import json
 import math
 import os
 import sys
@@ -14,26 +15,33 @@ from mathutils import Vector, Color
 import lib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FPS = 30
-B = 60 / 128
-BAR = 4 * B
-DUR = 12 * BAR + 1.0
+TL = json.load(open(f'{ROOT}/timeline.json'))
+FPS = TL['fps']
+B = 60 / TL['bpm']
+SEC = {}
+_acc = 0
+for _name, _beats, *_ in TL['sections']:
+    SEC[_name] = (_acc * B, (_acc + _beats) * B)
+    _acc += _beats
+DUR = _acc * B + TL['tail']
 
 
-def bs(k):
-    return (k - 1) * BAR
+def T(sec, beat=0.0):
+    return SEC[sec][0] + beat * B
 
 
 def frames_in(t0, t1):
     return [f for f in range(int(t0 * FPS) - 1, int(t1 * FPS) + 2) if t0 <= f / FPS < t1]
 
 
-INSERTS = sorted([bs(k) for k in (4, 5, 6, 7, 8, 9)] + [bs(5) + B] + [bs(10) + b * B for b in (0.5, 1.5, 2.5, 3.5)])
+INSERTS = sorted(T(sec, b) for sec, b, _ in TL['inserts'])
+INSERT_COLOR = {round(T(sec, b), 4): col for sec, b, col in TL['inserts']}
+IB = TL['insert_beats'] * B
 SEGMENTS = {
-    'reveal': frames_in(bs(3), bs(4)),
-    'inserts': [f for t0 in INSERTS for f in frames_in(t0, t0 + B / 2)],
-    'dark': frames_in(bs(11) + 2 * B, bs(12)),
-    'end': frames_in(bs(12), DUR),
+    'reveal': frames_in(*SEC['reveal']),
+    'inserts': [f for t0 in INSERTS for f in frames_in(t0, t0 + IB)],
+    'dark': frames_in(T('done', 2), SEC['done'][1]),
+    'end': frames_in(SEC['end'][0], DUR),
 }
 
 
@@ -139,8 +147,8 @@ def main():
     for n, f in enumerate(frames):
         t = f / FPS
         if shot == 'reveal':
-            lt_ = t - bs(3)
-            p = eio(inv(0, BAR, lt_))
+            lt_ = t - SEC['reveal'][0]
+            p = eio(inv(0, 4 * B, lt_))
             ign = B
             on = lt_ >= ign
             glow = (1.0 + 2.2 * pulse(lt_ - ign, 5)) if on else 0.0
@@ -153,14 +161,14 @@ def main():
         elif shot == 'inserts':
             i = max(k for k, t0 in enumerate(INSERTS) if t0 <= t + 1e-6)
             lt_ = t - INSERTS[i]
-            col = lib.GREEN if i == 0 else lib.BLUE
+            col = lib.GREEN if INSERT_COLOR[round(INSERTS[i], 4)] == 'green' else lib.BLUE
             cube.set_led('main', col, 1.0 + 2.2 * pulse(lt_, 11))
             cube.set_led('port', lib.BLUE, 0.6)
             pos, tgt, lens = ANGLES[i % len(ANGLES)]
-            k = 1 - 0.08 * (lt_ / (B / 2))
+            k = 1 - 0.08 * (lt_ / IB)
             place_cam(cam, CUBE_POS + Vector(pos) * k, CUBE_POS + Vector(tgt), lens, 4.0)
         elif shot == 'dark':
-            lb = (t - bs(11)) / B
+            lb = (t - SEC['done'][0]) / B
             p = inv(2.0, 4.0, lb)
             mix = eio(inv(2.2, 3.0, lb))
             col = tuple(lerp(b, g, mix) for b, g in zip(lib.BLUE, lib.GREEN))
@@ -170,7 +178,7 @@ def main():
             off = Vector((lerp(0.11, 0.08, p), lerp(-0.22, -0.18, p), lerp(0.10, 0.075, p)))
             place_cam(cam, CUBE_POS + off, CUBE_POS + Vector((-0.005, 0.01, 0.004)), 85, 2.8)
         elif shot == 'end':
-            p = clamp((t - bs(12)) / (DUR - bs(12)))
+            p = clamp((t - SEC['end'][0]) / (DUR - SEC['end'][0]))
             ang = math.radians(lerp(-12, 6, p))
             r = lerp(0.29, 0.27, p)
             pos = Vector((math.sin(ang) * r, -math.cos(ang) * r, lerp(0.125, 0.115, p)))

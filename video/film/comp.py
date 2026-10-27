@@ -13,16 +13,36 @@ import cv2
 import numpy as np
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-FPS = 30
-B = 60 / 128
-BAR = 4 * B
-DUR = 12 * BAR + 1.0
+TL = json.load(open(f'{ROOT}/timeline.json'))
+FPS = TL['fps']
+B = 60 / TL['bpm']
+SEC = {}
+_acc = 0
+for _name, _beats, *_ in TL['sections']:
+    SEC[_name] = (_acc * B, (_acc + _beats) * B)
+    _acc += _beats
+DUR = _acc * B + TL['tail']
 TOTAL = round(DUR * FPS)
 OW, OH = 1080, 1920
+PREVIEW = '--preview' in sys.argv
+ORDER = [s[0] for s in TL['sections']]
+UNLOCK_DOTS = [0.5, 1.5, 2.5, 3.5]   # 和 src/main.js 一致
+UNLOCK_ENTER = 4.0
 
 
-def bs(k):
-    return (k - 1) * BAR
+def T(sec, beat=0.0):
+    return SEC[sec][0] + beat * B
+
+
+def sec_at(t):
+    for n in ORDER:
+        if t < SEC[n][1]:
+            return n
+    return 'end'
+
+
+def lb_of(sec, t):
+    return (t - SEC[sec][0]) / B
 
 
 def clamp(x, a=0.0, b=1.0):
@@ -45,35 +65,34 @@ def pulse(dt, k):
     return math.exp(-dt * k) if dt >= 0 else 0.0
 
 
-INSERTS = sorted([bs(k) for k in (4, 5, 6, 7, 8, 9)] + [bs(5) + B] + [bs(10) + b * B for b in (0.5, 1.5, 2.5, 3.5)])
+INSERTS = sorted(T(sec, b) for sec, b, _ in TL['inserts'])
+IB = TL['insert_beats'] * B
 
 
 def insert_at(t):
     for t0 in INSERTS:
-        if t0 <= t < t0 + B / 2:
+        if t0 <= t < t0 + IB:
             return t0
     return None
 
 
 def segment(t):
-    """这一帧用什么画面。"""
+    """这一帧用什么画面：bl = Blender 镜头，laptop / phone = 底片 + 屏幕，ui = 全屏界面。"""
     if insert_at(t) is not None:
         return 'bl'
-    if t < bs(3):
+    sec = sec_at(t)
+    lb = lb_of(sec, t)
+    if sec in ('intro1', 'intro2', 'unlock'):
         return 'laptop'
-    if t < bs(4):
+    if sec in ('reveal', 'end'):
         return 'bl'
-    if t < bs(4) + 3 * B:
+    if sec == 'command':
+        return 'phone' if lb < 3 else 'laptop'
+    if sec == 'notify':
         return 'phone'
-    if t < bs(6):
-        return 'laptop'
-    if bs(9) + 1.5 * B <= t < bs(10):
-        return 'phone'
-    if t < bs(11) + 1.4 * B:
-        return 'ui'
-    if t < bs(11) + 2 * B:
-        return 'laptop'
-    return 'bl'
+    if sec == 'done':
+        return 'ui' if lb < 1.4 else 'laptop' if lb < 2 else 'bl'
+    return 'ui'
 
 
 def layer_frames(layer):
@@ -125,24 +144,29 @@ def view(name, t):
     sc = scr.mean(axis=0)
     width = np.linalg.norm(scr[1] - scr[0])
     fill = 1040 / width / (OW / W)
+    sec = sec_at(t)
+    lb = lb_of(sec, t)
     if name == 'laptop':
-        if t < bs(3):
-            p1 = eio(inv(0.0, bs(2), t))
-            p2 = eio(inv(bs(2), bs(2) + 1.5 * B, t))
+        if sec in ('intro1', 'intro2'):
+            p1 = eio(inv(SEC['intro1'][0], SEC['intro1'][1], t))
+            p2 = eio(inv(T('intro2'), T('intro2', 1.5), t))
             z = lerp(lerp(1.0, 1.22, p1), fill, p2)
-            foc = center + (sc - center) * lerp(0.35 * p1, 1.0, p2)
-            return z, foc
-        if t < bs(5):
-            return lerp(1.0, 1.06, inv(bs(4) + 3 * B, bs(5), t)), center
-        if t < bs(6):
-            return lerp(fill, fill * 1.05, inv(bs(5), bs(6), t)), sc
-        p = eio(inv(bs(11) + 1.4 * B, bs(11) + 2 * B, t))
+            return z, center + (sc - center) * lerp(0.35 * p1, 1.0, p2)
+        if sec == 'command':
+            return lerp(1.0, 1.06, inv(3, 4, lb)), center
+        if sec == 'unlock':
+            # 前 4 拍：屏幕和小方块同框；回车那一下推进到屏幕铺满
+            cube = np.array(info['cube'][0])
+            mid = np.array([(scr[:, 0].min() + cube[0] + 90) / 2, (scr[:, 1].min() + cube[1] + 90) / 2])
+            medium = min(1080 / (max(scr[:, 0].max(), cube[0] + 80) - scr[:, 0].min() + 60), 1920 / (cube[1] + 140 - scr[:, 1].min())) / (OW / W)
+            if lb < UNLOCK_ENTER:
+                return lerp(medium, medium * 1.08, lb / UNLOCK_ENTER), mid
+            p = eio(inv(UNLOCK_ENTER, UNLOCK_ENTER + 0.5, lb))
+            z = lerp(medium * 1.08, fill, p) * lerp(1.0, 1.05, inv(UNLOCK_ENTER + 0.5, 8, lb))
+            return z, mid + (sc - mid) * p
+        p = eio(inv(1.4, 2.0, lb))  # done：拉远
         return lerp(fill, 1.0, p), sc + (center - sc) * p
-    # phone
-    if t < bs(5):
-        p = inv(bs(4) + 0.5 * B, bs(4) + 3 * B, t)
-    else:
-        p = inv(bs(9) + 1.5 * B, bs(10), t)
+    p = inv(0.5, 3, lb) if sec == 'command' else inv(0, 2, lb)
     return lerp(1.0, 1.1, p), center + (sc - center) * 0.3
 
 
@@ -198,7 +222,10 @@ def compose(f):
     t = f / FPS
     seg = segment(t)
     if seg == 'bl':
-        img = read(f'{ROOT}/frames/bl/f_{f:05d}.png').astype(np.float32) / 255
+        path = f'{ROOT}/frames/bl/f_{f:05d}.png'
+        if PREVIEW and not os.path.exists(path):
+            path = f'{ROOT}/out/sample-cube.png'  # 预览时 Blender 镜头还没渲完，先用样张占位
+        img = read(path).astype(np.float32) / 255
         img = cv2.resize(img, (OW, OH), interpolation=cv2.INTER_CUBIC)
         img = bloom(img, 0.7, 0.6)
     elif seg == 'ui':
@@ -208,27 +235,32 @@ def compose(f):
         tex = read(f'{ROOT}/frames/{"desk" if name == "laptop" else "phone"}/f_{f:05d}.png').astype(np.float32) / 255
         img, ex = plate_frame(name, t, tex)
         img = bloom(img, 0.8, 0.4)
-        # 第 4 小节最后一拍：家里的小方块收到指令，亮一下
-        if name == 'laptop' and bs(4) + 3 * B <= t < bs(5) and 'cube' in ex:
-            a = pulse(t - (bs(4) + 3 * B), 4)
-            img = img + radial(*ex['cube'], 70 * ex['s'] / 0.67, (0.2, 1.0, 0.55)[::-1], 0.9 * a)
+        # 家里的小方块：收到指令时亮一下；解锁时每输一位密码闪一下蓝光
+        sec, lb = sec_at(t), lb_of(sec_at(t), t)
+        if name == 'laptop' and 'cube' in ex:
+            r = 70 * ex['s'] / 0.67
+            if sec == 'command':
+                img = img + radial(*ex['cube'], r, (0.55, 1.0, 0.2), 0.9 * pulse((lb - 3) * B, 4))
+            if sec == 'unlock' and lb < UNLOCK_ENTER + 1:
+                k = max([pulse((lb - d) * B, 9) for d in UNLOCK_DOTS] + [pulse((lb - UNLOCK_ENTER) * B, 5)])
+                img = img + radial(*ex['cube'], r, (1.0, 0.45, 0.1), 1.1 * k)
 
     # 闪光（BGR）
     flash = None
     ti = insert_at(t)
     if ti is not None:
         flash = ((1, 1, 1), 0.35 * pulse(t - ti, 30))
-    ign = bs(3) + B
-    if ign <= t < bs(4):
+    ign = T('reveal', 1)
+    if ign <= t < SEC['reveal'][1]:
         flash = ((0.8, 1.0, 0.7), 0.75 * pulse(t - ign, 7))
-    unl = bs(5) + 3 * B
-    if unl <= t < bs(6):
-        flash = ((1, 1, 1), 0.45 * pulse(t - unl, 9))
-    if bs(12) <= t:
-        flash = ((1, 1, 1), 0.5 * pulse(t - bs(12), 9))
+    unl = T('unlock', UNLOCK_ENTER)
+    if unl <= t < SEC['unlock'][1]:
+        flash = ((1, 1, 1), 0.6 * pulse(t - unl, 7))
+    if SEC['end'][0] <= t:
+        flash = ((1, 1, 1), 0.5 * pulse(t - SEC['end'][0], 9))
     if flash and flash[1] > 0.002:
         img = img * (1 - flash[1]) + np.array(flash[0], np.float32) * flash[1]
-    for t0, dur in ((bs(11) + 2 * B, 0.4 * B), (bs(9) + 1.5 * B, 0.3 * B)):
+    for t0, dur in ((T('done', 2), 0.4 * B),):
         if t0 <= t < t0 + dur:  # 从黑场淡入
             img = img * inv(t0, t0 + dur, t)
 
@@ -245,7 +277,7 @@ def compose(f):
 
 
 def main():
-    args = dict(zip(sys.argv[1::2], sys.argv[2::2]))
+    args = dict(zip([a for a in sys.argv[1:] if a != '--preview'][0::2], [a for a in sys.argv[1:] if a != '--preview'][1::2]))
     if '--list' in args:
         print(ranges(layer_frames(args['--list'])))
         return

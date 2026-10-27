@@ -11,25 +11,17 @@
 <link rel="stylesheet" href="/node_modules/@fontsource/jetbrains-mono/400.css">
 <link rel="stylesheet" href="/node_modules/@fontsource/jetbrains-mono/700.css">
 <link rel="stylesheet" href="style.css">
-<script type="importmap">
-{ "imports": {
-  "three": "/node_modules/three/build/three.module.js",
-  "three/addons/": "/node_modules/three/examples/jsm/"
-} }
-</script>
 </head>
 <body>
 <div id="stage">
-  <div id="under"></div>
-  <canvas id="gl" width="1080" height="1920"></canvas>
-  <div id="over"></div>
+  <div id="ui"></div>
+  <div id="ovl"></div>
   <div id="capbg"></div>
   <div id="hud"></div>
-  <div id="cap"><div class="l1"></div><div class="l2"></div></div>
-  <div id="flash"></div>
-  <div id="vig"></div>
-  <canvas id="grain" width="540" height="960"></canvas>
+  <div id="cap"></div>
 </div>
+<div id="desk"></div>
+<div id="phonescr"></div>
 <script type="module" src="main.js"></script>
 </body>
 </html>
